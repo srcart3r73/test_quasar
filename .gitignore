@@ -29,5 +29,6 @@ yarn-error.log*
 *.njsproj
 *.sln
 
-# local .env files
+# Environment files
+.env
 .env.local*
