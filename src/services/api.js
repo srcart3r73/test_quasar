@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // Get API base URL from environment variables
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 // Create axios instance
 const apiClient = axios.create({
@@ -21,7 +21,7 @@ export const transactionsAPI = {
 
   // Get single transaction
   async getById(id) {
-    const response = await apiClient.get(`/transactions/${id}`)
+    const response = await apiClient.get(`/transactions?id=${id}`)
     return response.data
   },
 
@@ -60,7 +60,7 @@ export const buildingsAPI = {
 
   // Get single building
   async getById(id) {
-    const response = await apiClient.get(`/buildings/${id}`)
+    const response = await apiClient.get(`/buildings?id=${id}`)
     return response.data
   },
 
@@ -84,7 +84,7 @@ export const buildingsAPI = {
 }
 
 // API service for linking transactions and buildings
-export const linkAPI = {
+export const linkTransactionsBuildingsAPI = {
   // Get all links
   async getAll() {
     const response = await apiClient.get('/link_transactions_buildings')
@@ -120,12 +120,73 @@ export const linkAPI = {
 
   // Delete link by transaction and building IDs
   async deleteByIds(transactionId, buildingId) {
-    const response = await apiClient.delete(`/link_transactions_buildings`, {
-      data: {
-        transaction_id: transactionId,
-        building_id: buildingId
-      }
-    })
+    const response = await apiClient.delete(`/links/${transactionId}/${buildingId}`)
+    return response.data
+  },
+}
+
+// API service for priorities
+export const prioritiesAPI = {
+  // Get all priorities
+  async getAll() {
+    const response = await apiClient.get('/priorities')
+    return response.data
+  },
+
+  // Get single priority
+  async getById(id) {
+    const response = await apiClient.get(`/priorities?id=${id}`)
+    return response.data
+  },
+
+  // Create new priority
+  async create(data) {
+    const response = await apiClient.post('/priorities', data)
+    return response.data
+  },
+
+  // Update priority
+  async update(id, data) {
+    const response = await apiClient.put(`/priorities/${id}`, data)
+    return response.data
+  },
+
+  // Delete priority
+  async delete(id) {
+    const response = await apiClient.delete(`/priorities/${id}`)
+    return response.data
+  },
+}
+
+// API service for participants
+export const participantsAPI = {
+  // Get all participants
+  async getAll() {
+    const response = await apiClient.get('/participants')
+    return response.data
+  },
+
+  // Get single participant
+  async getById(id) {
+    const response = await apiClient.get(`/participants?id=${id}`)
+    return response.data
+  },
+
+  // Create new participant
+  async create(data) {
+    const response = await apiClient.post('/participants', data)
+    return response.data
+  },
+
+  // Update participant
+  async update(id, data) {
+    const response = await apiClient.put(`/participants/${id}`, data)
+    return response.data
+  },
+
+  // Delete participant
+  async delete(id) {
+    const response = await apiClient.delete(`/participants/${id}`)
     return response.data
   },
 }
@@ -167,6 +228,8 @@ export const handleAPIError = (error) => {
 export default {
   transactionsAPI,
   buildingsAPI,
-  linkAPI,
+  linkTransactionsBuildingsAPI,
+  prioritiesAPI,
+  participantsAPI,
   handleAPIError,
 }
