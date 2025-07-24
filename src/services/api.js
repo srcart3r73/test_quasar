@@ -1,3 +1,4 @@
+// src/services/api.js
 import axios from 'axios'
 
 // Get API base URL from environment variables
@@ -11,184 +12,88 @@ const apiClient = axios.create({
   },
 })
 
-// API service for transactions
-export const transactionsAPI = {
-  // Get all transactions
-  async getAll() {
-    const response = await apiClient.get('/transactions')
+// Single generic API function
+export const api = {
+  // Get all records
+  async getAll(endpoint) {
+    const response = await apiClient.get(`/${endpoint}`)
     return response.data
   },
 
-  // Get single transaction
-  async getById(id) {
-    const response = await apiClient.get(`/transactions?id=${id}`)
+  // Get single record
+  async getById(endpoint, id) {
+    const response = await apiClient.get(`/${endpoint}?id=${id}`)
     return response.data
   },
 
-  // Create new transaction
-  async create(data) {
-    const response = await apiClient.post('/transactions', data)
+  // Create new record
+  async create(endpoint, data) {
+    const response = await apiClient.post(`/${endpoint}`, data)
     return response.data
   },
 
-  // Update transaction
-  async update(id, data) {
-    const response = await apiClient.put(`/transactions/${id}`, data)
+  // Update record
+  async update(endpoint, id, data) {
+    const response = await apiClient.put(`/${endpoint}/${id}`, data)
     return response.data
   },
 
-  // Delete transaction
-  async delete(id) {
-    const response = await apiClient.delete(`/transactions/${id}`)
+  // Delete record
+  async delete(endpoint, id) {
+    const response = await apiClient.delete(`/${endpoint}/${id}`)
     return response.data
   },
 
-  // Get buildings linked to a transaction
-  async getLinkedBuildings(transactionId) {
-    const response = await apiClient.get(`/transactions/${transactionId}/buildings`)
-    return response.data
-  },
-}
-
-// API service for buildings
-export const buildingsAPI = {
-  // Get all buildings
-  async getAll() {
-    const response = await apiClient.get('/buildings')
+  // Generic query with parameters
+  async query(endpoint, params = {}) {
+    const response = await apiClient.get(`/${endpoint}`, { params })
     return response.data
   },
 
-  // Get single building
-  async getById(id) {
-    const response = await apiClient.get(`/buildings?id=${id}`)
+  // Get related records (for nested endpoints)
+  async getRelated(endpoint, id, relation) {
+    const response = await apiClient.get(`/${endpoint}/${id}/${relation}`)
     return response.data
   },
 
-  // Create new building
-  async create(data) {
-    const response = await apiClient.post('/buildings', data)
+  // Create related record
+  async createRelated(endpoint, id, relation, data) {
+    const response = await apiClient.post(`/${endpoint}/${id}/${relation}`, data)
     return response.data
   },
 
-  // Update building
-  async update(id, data) {
-    const response = await apiClient.put(`/buildings/${id}`, data)
+  // Delete related record
+  async deleteRelated(endpoint, id, relation, relatedId) {
+    const response = await apiClient.delete(`/${endpoint}/${id}/${relation}/${relatedId}`)
     return response.data
   },
 
-  // Delete building
-  async delete(id) {
-    const response = await apiClient.delete(`/buildings/${id}`)
-    return response.data
-  },
-}
-
-// API service for linking transactions and buildings
-export const linkTransactionsBuildingsAPI = {
-  // Get all links
-  async getAll() {
-    const response = await apiClient.get('/link_transactions_buildings')
-    return response.data
-  },
-
-  // Get links for a specific transaction
-  async getByTransactionId(transactionId) {
-    const response = await apiClient.get(`/link_transactions_buildings?transaction_id=${transactionId}`)
-    return response.data
-  },
-
-  // Get links for a specific building
-  async getByBuildingId(buildingId) {
-    const response = await apiClient.get(`/link_transactions_buildings?building_id=${buildingId}`)
+  // Special method for linking tables
+  async createLink(linkEndpoint, primaryId, relatedId, primaryKey = 'transaction_id', relatedKey = 'building_id') {
+    const payload = {
+      [primaryKey]: primaryId,
+      [relatedKey]: relatedId
+    }
+    
+    console.log('🔗 Creating link with:')
+    console.log('  Endpoint:', linkEndpoint)
+    console.log('  Primary ID:', primaryId)
+    console.log('  Related ID:', relatedId)
+    console.log('  Primary Key:', primaryKey)
+    console.log('  Related Key:', relatedKey)
+    console.log('  Payload:', payload)
+    
+    const response = await apiClient.post(`/${linkEndpoint}`, payload)
+    
+    console.log('✅ Link created, response:', response.data)
     return response.data
   },
 
-  // Create new link
-  async create(transactionId, buildingId) {
-    const response = await apiClient.post('/link_transactions_buildings', {
-      transaction_id: transactionId,
-      building_id: buildingId
-    })
+  // Delete link by IDs
+  async deleteLink(linkEndpoint, primaryId, relatedId) {
+    const response = await apiClient.delete(`/links/${primaryId}/${relatedId}`)
     return response.data
-  },
-
-  // Delete link
-  async delete(id) {
-    const response = await apiClient.delete(`/link_transactions_buildings/${id}`)
-    return response.data
-  },
-
-  // Delete link by transaction and building IDs
-  async deleteByIds(transactionId, buildingId) {
-    const response = await apiClient.delete(`/links/${transactionId}/${buildingId}`)
-    return response.data
-  },
-}
-
-// API service for priorities
-export const prioritiesAPI = {
-  // Get all priorities
-  async getAll() {
-    const response = await apiClient.get('/priorities')
-    return response.data
-  },
-
-  // Get single priority
-  async getById(id) {
-    const response = await apiClient.get(`/priorities?id=${id}`)
-    return response.data
-  },
-
-  // Create new priority
-  async create(data) {
-    const response = await apiClient.post('/priorities', data)
-    return response.data
-  },
-
-  // Update priority
-  async update(id, data) {
-    const response = await apiClient.put(`/priorities/${id}`, data)
-    return response.data
-  },
-
-  // Delete priority
-  async delete(id) {
-    const response = await apiClient.delete(`/priorities/${id}`)
-    return response.data
-  },
-}
-
-// API service for participants
-export const participantsAPI = {
-  // Get all participants
-  async getAll() {
-    const response = await apiClient.get('/participants')
-    return response.data
-  },
-
-  // Get single participant
-  async getById(id) {
-    const response = await apiClient.get(`/participants?id=${id}`)
-    return response.data
-  },
-
-  // Create new participant
-  async create(data) {
-    const response = await apiClient.post('/participants', data)
-    return response.data
-  },
-
-  // Update participant
-  async update(id, data) {
-    const response = await apiClient.put(`/participants/${id}`, data)
-    return response.data
-  },
-
-  // Delete participant
-  async delete(id) {
-    const response = await apiClient.delete(`/participants/${id}`)
-    return response.data
-  },
+  }
 }
 
 // Error handler utility
@@ -225,11 +130,4 @@ export const handleAPIError = (error) => {
   }
 }
 
-export default {
-  transactionsAPI,
-  buildingsAPI,
-  linkTransactionsBuildingsAPI,
-  prioritiesAPI,
-  participantsAPI,
-  handleAPIError,
-}
+export default api

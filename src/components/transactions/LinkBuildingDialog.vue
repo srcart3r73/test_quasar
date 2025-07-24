@@ -67,15 +67,32 @@ const selectedBuildingId = ref(null)
 // Computed
 const buildingOptions = computed(() => {
   return props.availableBuildings.map(building => ({
-    label: `${building.address_street} - ${building.address_city}, ${building.address_state}`,
+    label: `${building.address_street} - ${building.address_city_id}, ${building.address_state_id}`,
     value: building.id
   }))
 })
 
 // Methods
 const handleLink = () => {
+  console.log('🔗 handleLink called')
+  console.log('🔗 selectedBuildingId.value:', selectedBuildingId.value)
+  console.log('🔗 availableBuildings:', props.availableBuildings)
+  
   if (selectedBuildingId.value) {
-    emit('link', selectedBuildingId.value)
+    // Find the full building object
+    const selectedBuilding = props.availableBuildings.find(
+      building => building.id === selectedBuildingId.value
+    )
+    
+    console.log('🔗 Found building:', selectedBuilding)
+    
+    if (selectedBuilding) {
+      emit('link', selectedBuilding.id)  // Make sure we're emitting the ID
+    } else {
+      console.error('❌ Could not find building with ID:', selectedBuildingId.value)
+    }
+  } else {
+    console.error('❌ No building selected')
   }
 }
 

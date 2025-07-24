@@ -1,367 +1,377 @@
 <template>
   <q-page>
-    <div class="row q-gutter-md">
-      <!-- Main Transactions Table -->
-      <div class="col-md-12 col-sm-12">
-        <q-card>
-          <q-card-section>
-            <div class="row items-center q-mb-md">
-              <div class="text-h6">Transactions</div>
-              <q-space />
-              <q-btn
-                color="primary"
-                icon="add"
-                label="Add Transaction"
-                @click="addNewTransaction"
-                dense
-              />
-            </div>
+    <!-- Tab Panel Structure -->
+    <q-tabs
+      v-model="activeTab"
+      dense
+      class="text-grey"
+      active-color="primary"
+      indicator-color="primary"
+      align="left"
+      narrow-indicator
+    >
+      <!-- Transactions Tab -->
+      <q-tab name="transactions" label="Transactions" />
+      
+      <!-- Financial Model Tabs -->
+      <q-tab
+        v-for="modelTab in financialModelTabs"
+        :key="modelTab.id"
+        :name="modelTab.id"
+        class="financial-model-tab"
+      >
+        <div class="column items-center">
+          <div class="text-weight-medium">Financial Model</div>
+          <div class="text-caption">{{ modelTab.transactionName }}</div>
+        </div>
+        <q-btn
+          flat
+          round
+          dense
+          size="sm"
+          icon="close"
+          class="q-ml-sm"
+          @click.stop="closeFinancialModelTab(modelTab.id)"
+        />
+      </q-tab>
+    </q-tabs>
 
-            <!-- Search and bulk actions -->
-            <div class="row q-gutter-md q-mb-md">
-              <div class="col-md-8">
-                <q-input
-                  v-model="searchQuery"
-                  placeholder="Search transactions..."
-                  filled
-                  dense
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="search" />
-                  </template>
-                </q-input>
-              </div>
-              <div class="col-md-4">
-                <q-btn
-                  v-if="selectedTransactions.length > 0"
-                  color="negative"
-                  icon="delete"
-                  :label="`Delete (${selectedTransactions.length})`"
-                  @click="deleteSelectedTransactions"
-                  dense
-                />
-              </div>
-            </div>
+    <q-separator />
 
-            <!-- Transactions Table with Expandable Rows -->
-            <q-table
-              dense
-              :rows="filteredTransactions"
-              :columns="transactionColumns"
-              row-key="id"
-              :loading="loadingTransactions"
-              :selected-rows-label="getSelectedString"
-              selection="multiple"
-              v-model:selected="selectedTransactions"
-              v-model:expanded="expanded"
-              :pagination="{ rowsPerPage: 0 }"
-              flat
-              @row-click="selectTransaction"
-            >
-              <!-- Custom header to add expand column -->
-              <template v-slot:header="props">
-                <q-tr :props="props">
-                  <q-th auto-width /> <!-- Expand toggle -->
-                  <q-th auto-width /> <!-- Selection checkbox -->
-                  
-                  <q-th
-                    v-for="col in props.cols"
-                    :key="col.name"
-                    :props="props"
-                  >
-                    {{ col.label }}
-                  </q-th>
-                </q-tr>
-              </template>
+    <!-- Tab Panels Content -->
+    <q-tab-panels v-model="activeTab" animated>
+      <!-- Transactions Tab Panel -->
+      <q-tab-panel name="transactions" class="q-pa-none">
+        <div class="row q-gutter-md q-pa-md">
+          <!-- Main Transactions Table -->
+          <div class="col-md-12 col-sm-12">
+            <q-card>
+              <q-card-section>
+                <div class="row items-center q-mb-md">
+                  <div class="text-h6">Transactions</div>
+                  <q-space />
+                  <q-btn
+                    color="primary"
+                    icon="add"
+                    label="Add Transaction"
+                    @click="addNewTransaction"
+                    dense
+                  />
+                </div>
 
-              <!-- Custom body with expandable rows -->
-              <template v-slot:body="props">
-                <q-tr :props="props">
-                  <!-- Expand toggle -->
-                  <q-td auto-width>
+                <!-- Search and bulk actions -->
+                <div class="row q-gutter-md q-mb-md">
+                  <div class="col-md-8">
+                    <q-input
+                      v-model="searchQuery"
+                      placeholder="Search transactions..."
+                      filled
+                      dense
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="search" />
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-md-4">
                     <q-btn
+                      v-if="selectedTransactions.length > 0"
+                      color="negative"
+                      icon="delete"
+                      :label="`Delete (${selectedTransactions.length})`"
+                      @click="deleteSelectedTransactions"
                       dense
-                      round
-                      flat
-                      :icon="props.expand ? 'expand_more' : 'expand_less'"
-                      @click.stop="toggleExpand(props)"
-                      size="sm"
                     />
-                  </q-td>
-                  
-                  <!-- Selection checkbox -->
-                  <q-td auto-width>
-                    <q-checkbox v-model="props.selected" />
-                  </q-td>
+                  </div>
+                </div>
 
-                  <!-- Actions column -->
-                  <q-td key="actions" :props="props">
-                    <div class="row no-wrap items-center">
-                      <q-btn
-                        dense
-                        round
-                        flat
-                        color="primary"
-                        icon="visibility"
-                        @click.stop="selectTransaction(null, props.row)"
-                        size="sm"
-                        title="Select Transaction"
-                      />
-                      <q-btn
-                        dense
-                        round
-                        flat
-                        color="negative"
-                        icon="delete"
-                        @click.stop="deleteTransaction(props.row)"
-                        size="sm"
-                        title="Delete Transaction"
-                      />
-                    </div>
-                  </q-td>
+                <!-- Transactions Table with Expandable Rows -->
+                <q-table
+                  dense
+                  :rows="filteredTransactions"
+                  :columns="transactionColumns"
+                  row-key="id"
+                  :loading="loadingTransactions"
+                  :selected-rows-label="getSelectedString"
+                  selection="multiple"
+                  v-model:selected="selectedTransactions"
+                  v-model:expanded="expanded"
+                  :pagination="{ rowsPerPage: 0 }"
+                  flat
+                  @row-click="selectTransaction"
+                >
+                  <!-- Custom header with expand toggle and selection checkbox -->
+                  <template v-slot:header="props">
+                    <q-tr :props="props">
+                      <q-th auto-width /> <!-- Expand toggle -->
+                      <q-th auto-width /> <!-- Selection checkbox -->
+                      
+                      <q-th
+                        v-for="col in props.cols"
+                        :key="col.name"
+                        :props="props"
+                      >
+                        {{ col.label }}
+                      </q-th>
+                    </q-tr>
+                  </template>
 
-                  <!-- Priority dropdown -->
-                  <q-td key="priority_id" :props="props">
-                    <q-select
-                      v-model="props.row.priority_id"
-                      :options="sortedPriorities"
-                      option-value="id"
-                      option-label="priority"
-                      dense
-                      borderless
-                      emit-value
-                      map-options
-                      clearable
-                      hide-dropdown-icon
-                      @update:model-value="saveField(props.row, 'priority_id', $event)"
-                    />
-                  </q-td>
-
-                  <!-- ID field -->
-                  <q-td key="id" :props="props">
-                    {{ props.row.id }}
-                  </q-td>
-
-                  <!-- Name field -->
-                  <q-td key="name" :props="props">
-                    <q-input
-                      v-model="props.row.name"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'name', props.row.name)"
-                    >
-                      <q-tooltip v-if="props.row.name">
-                        {{ props.row.name }}
-                      </q-tooltip>
-                    </q-input>
-                  </q-td>
-
-                  <!-- Date fields -->
-                  <q-td key="date_listing" :props="props">
-                    <q-input
-                      v-model="props.row.date_listing"
-                      type="date"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'date_listing', props.row.date_listing)"
-                    />
-                  </q-td>
-
-                  <q-td key="date_closing" :props="props">
-                    <q-input
-                      v-model="props.row.date_closing"
-                      type="date"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'date_closing', props.row.date_closing)"
-                    />
-                  </q-td>
-
-                  <q-td key="date_pursuit" :props="props">
-                    <q-input
-                      v-model="props.row.date_pursuit"
-                      type="date"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'date_pursuit', props.row.date_pursuit)"
-                    />
-                  </q-td>
-
-                  <!-- Participant dropdowns -->
-                  <q-td key="listing_broker_id" :props="props">
-                    <q-select
-                      v-model="props.row.listing_broker_id"
-                      :options="participantOptionsWithAddNew"
-                      option-value="id"
-                      option-label="participant"
-                      dense
-                      borderless
-                      emit-value
-                      map-options
-                      clearable
-                      hide-dropdown-icon
-                      @update:model-value="handleParticipantSelect(props.row, 'listing_broker_id', $event)"
-                    >
-                      <template v-slot:option="scope">
-                        <q-item 
-                          v-bind="scope.itemProps"
-                          :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
-                        >
-                          <q-item-section>
-                            <q-item-label>{{ scope.opt.participant }}</q-item-label>
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-select>
-                  </q-td>
-
-                  <q-td key="buyer_id" :props="props">
-                    <q-select
-                      v-model="props.row.buyer_id"
-                      :options="participantOptionsWithAddNew"
-                      option-value="id"
-                      option-label="participant"
-                      dense
-                      borderless
-                      emit-value
-                      map-options
-                      clearable
-                      hide-dropdown-icon
-                      @update:model-value="handleParticipantSelect(props.row, 'buyer_id', $event)"
-                    >
-                      <template v-slot:option="scope">
-                        <q-item 
-                          v-bind="scope.itemProps"
-                          :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
-                        >
-                          <q-item-section>
-                            <q-item-label>{{ scope.opt.participant }}</q-item-label>
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-select>
-                  </q-td>
-
-                  <q-td key="seller_id" :props="props">
-                    <q-select
-                      v-model="props.row.seller_id"
-                      :options="participantOptionsWithAddNew"
-                      option-value="id"
-                      option-label="participant"
-                      dense
-                      borderless
-                      emit-value
-                      map-options
-                      clearable
-                      hide-dropdown-icon
-                      @update:model-value="handleParticipantSelect(props.row, 'seller_id', $event)"
-                    >
-                      <template v-slot:option="scope">
-                        <q-item 
-                          v-bind="scope.itemProps"
-                          :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
-                        >
-                          <q-item-section>
-                            <q-item-label>{{ scope.opt.participant }}</q-item-label>
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-select>
-                  </q-td>
-
-                  <!-- Notes field -->
-                  <q-td key="notes" :props="props">
-                    <q-input
-                      v-model="props.row.notes"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'notes', props.row.notes)"
-                    >
-                      <q-tooltip v-if="props.row.notes">
-                        {{ props.row.notes }}
-                      </q-tooltip>
-                    </q-input>
-                  </q-td>
-
-                  <!-- Description field -->
-                  <q-td key="description" :props="props">
-                    <q-input
-                      v-model="props.row.description"
-                      dense
-                      borderless
-                      @blur="saveField(props.row, 'description', props.row.description)"
-                    >
-                      <q-tooltip v-if="props.row.description">
-                        {{ props.row.description }}
-                      </q-tooltip>
-                    </q-input>
-                  </q-td>
-                </q-tr>
-
-                <!-- Expanded row content -->
-                <q-tr v-show="props.expand" :props="props">
-                  <q-td colspan="100%" class="bg-grey-1">
-                    <div class="q-pa-xs">
-                      <div class="row items-center">
-                        <div class="text-italic" style="border-bottom: 1px solid #e0e0e0; padding-bottom: 1px; margin-bottom: 1px;">
-                          Buildings for this Transaction:
-                        </div>
+                  <!-- Custom body with expandable rows -->
+                  <template v-slot:body="props">
+                    <q-tr :props="props">
+                      <!-- Expand toggle -->
+                      <q-td auto-width>
                         <q-btn
-                          color="secondary"
-                          icon="link"
-                          label="Add A Building"
-                          @click="handleLinkBuildingForTransaction(props.row)"
-                          size="sm"
-                          class="q-ml-lg"
                           dense
+                          round
+                          flat
+                          :icon="props.expand ? 'expand_more' : 'expand_less'"
+                          @click.stop="toggleExpand(props)"
+                          size="sm"
                         />
-                      </div>
+                      </q-td>
                       
-                      <!-- Buildings content -->
-                      <div v-if="loadingBuildingsByTransaction[props.row.id]" class="text-center q-py-md">
-                        <q-spinner color="primary" size="1.5em" />
-                      </div>
-                      
-                      <q-list v-else-if="getLinkedBuildingsForTransaction(props.row.id).length > 0" dense>
-                        <q-item v-for="building in getLinkedBuildingsForTransaction(props.row.id)" :key="building.id" dense>
-                          <q-item-section>
-                            <q-item-label class="text-weight-medium">
-                              {{ building.address_street }}
-                            </q-item-label>
-                            <q-item-label caption>
-                              {{ building.address_city_id }}, {{ building.address_state_id }}, {{ building.address_neighborhood_id }}, {{ building.description }}
-                            </q-item-label>
-                            <q-item-label caption v-if="building.square_feet">
-                              {{ building.square_feet }} sq ft
-                            </q-item-label>
-                          </q-item-section>
-                          <q-item-section side>
+                      <!-- Selection checkbox -->
+                      <q-td auto-width>
+                        <q-checkbox v-model="props.selected" />
+                      </q-td>
+
+                      <!-- Actions column -->
+                      <q-td key="actions" :props="props">
+                        <div class="row no-wrap items-center">
+                          <q-btn
+                            dense
+                            round
+                            flat
+                            color="primary"
+                            icon="visibility"
+                            @click.stop="openFinancialModelTab(props.row)"
+                            size="sm"
+                            title="Open Financial Model"
+                          />
+                          <q-btn
+                            dense
+                            round
+                            flat
+                            color="negative"
+                            icon="delete"
+                            @click.stop="deleteTransaction(props.row)"
+                            size="sm"
+                            title="Delete Transaction"
+                          />
+                        </div>
+                      </q-td>
+
+                      <!-- Priority dropdown -->
+                      <q-td key="priority_id" :props="props">
+                        <q-select
+                          v-model="props.row.priority_id"
+                          :options="sortedPriorities"
+                          option-value="id"
+                          option-label="priority"
+                          dense
+                          borderless
+                          emit-value
+                          map-options
+                          clearable
+                          hide-dropdown-icon
+                          @update:model-value="saveField(props.row, 'priority_id', $event)"
+                        />
+                      </q-td>
+
+                      <q-td key="date_pursuit" :props="props">
+                        <q-input
+                          v-model="props.row.date_pursuit"
+                          type="date"
+                          dense
+                          borderless
+                          @blur="saveField(props.row, 'date_pursuit', props.row.date_pursuit)"
+                        />
+                      </q-td>
+
+                      <!-- Participant dropdowns -->
+                      <q-td key="listing_broker_id" :props="props">
+                        <q-select
+                          v-model="props.row.listing_broker_id"
+                          :options="participantOptionsWithAddNew"
+                          option-value="id"
+                          option-label="participant"
+                          dense
+                          borderless
+                          emit-value
+                          map-options
+                          clearable
+                          hide-dropdown-icon
+                          @update:model-value="handleParticipantSelect(props.row, 'listing_broker_id', $event)"
+                        >
+                          <template v-slot:option="scope">
+                            <q-item 
+                              v-bind="scope.itemProps"
+                              :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
+                            >
+                              <q-item-section>
+                                <q-item-label>{{ scope.opt.participant }}</q-item-label>
+                              </q-item-section>
+                            </q-item>
+                          </template>
+                        </q-select>
+                      </q-td>
+
+                      <q-td key="buyer_id" :props="props">
+                        <q-select
+                          v-model="props.row.buyer_id"
+                          :options="participantOptionsWithAddNew"
+                          option-value="id"
+                          option-label="participant"
+                          dense
+                          borderless
+                          emit-value
+                          map-options
+                          clearable
+                          hide-dropdown-icon
+                          @update:model-value="handleParticipantSelect(props.row, 'buyer_id', $event)"
+                        >
+                          <template v-slot:option="scope">
+                            <q-item 
+                              v-bind="scope.itemProps"
+                              :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
+                            >
+                              <q-item-section>
+                                <q-item-label>{{ scope.opt.participant }}</q-item-label>
+                              </q-item-section>
+                            </q-item>
+                          </template>
+                        </q-select>
+                      </q-td>
+
+                      <q-td key="seller_id" :props="props">
+                        <q-select
+                          v-model="props.row.seller_id"
+                          :options="participantOptionsWithAddNew"
+                          option-value="id"
+                          option-label="participant"
+                          dense
+                          borderless
+                          emit-value
+                          map-options
+                          clearable
+                          hide-dropdown-icon
+                          @update:model-value="handleParticipantSelect(props.row, 'seller_id', $event)"
+                        >
+                          <template v-slot:option="scope">
+                            <q-item 
+                              v-bind="scope.itemProps"
+                              :class="scope.opt.id === 'add-new' ? 'text-primary text-weight-bold' : ''"
+                            >
+                              <q-item-section>
+                                <q-item-label>{{ scope.opt.participant }}</q-item-label>
+                              </q-item-section>
+                            </q-item>
+                          </template>
+                        </q-select>
+                      </q-td>
+
+                      <!-- Notes field -->
+                      <q-td key="notes" :props="props">
+                        <q-input
+                          v-model="props.row.notes"
+                          dense
+                          borderless
+                          @blur="saveField(props.row, 'notes', props.row.notes)"
+                        >
+                          <q-tooltip v-if="props.row.notes">
+                            {{ props.row.notes }}
+                          </q-tooltip>
+                        </q-input>
+                      </q-td>
+
+                      <!-- Description field -->
+                      <q-td key="description" :props="props">
+                        <q-input
+                          v-model="props.row.description"
+                          dense
+                          borderless
+                          @blur="saveField(props.row, 'description', props.row.description)"
+                        >
+                          <q-tooltip v-if="props.row.description">
+                            {{ props.row.description }}
+                          </q-tooltip>
+                        </q-input>
+                      </q-td>
+                    </q-tr>
+
+                    <!-- LINKED BUILDINGS -->
+                    <q-tr v-show="props.expand" :props="props">
+                      <q-td colspan="100%" class="bg-grey-1">
+                        <div class="q-pa-xs">
+                          <!-- Title and Link Button -->
+                          <div class="row items-center">
+                            <div class="text-italic" style="border-bottom: 1px solid #e0e0e0; padding-bottom: 1px; margin-bottom: 1px;">
+                              Buildings for this Transaction:
+                            </div>
                             <q-btn
-                              dense
-                              round
-                              flat
-                              color="negative"
-                              icon="unlink"
-                              @click="unlinkBuildingFromTransaction(building, props.row.id)"
+                              color="secondary"
+                              icon="link"
+                              label="Link Another Building"
+                              @click="handleLinkBuildingForTransaction(props.row)"
                               size="sm"
-                              title="Unlink Building"
+                              class="q-ml-lg"
+                              dense
                             />
-                          </q-item-section>
-                        </q-item>
-                      </q-list>
-                      
-                      <div v-else class="text-grey-6 text-center q-py-md">
-                        No buildings linked to this transaction
-                      </div>
-                    </div>
-                  </q-td>
-                </q-tr>
-              </template>
-            </q-table>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
+                          </div>                      
+                          <!-- Buildings content -->
+                          <div v-if="loadingBuildingsByTransaction[props.row.id]" class="text-center q-py-md">
+                            <q-spinner color="primary" size="1.5em" />
+                          </div>                      
+                          <q-table
+                            v-else-if="getLinkedBuildingsForTransaction(props.row.id).length > 0"
+                            :rows="getLinkedBuildingsForTransaction(props.row.id)"
+                            :columns="buildingColumns"
+                            row-key="id"
+                            dense
+                            flat
+                            hide-bottom
+                          >
+                            <template v-slot:body-cell="buildingProps">
+                              <q-td :props="buildingProps" class="text-caption">
+                                <q-input
+                                  v-model="buildingProps.row[buildingProps.col.name]"
+                                  auto-width
+                                  dense
+                                  borderless
+                                  class="text-caption"
+                                  input-class="text-caption"
+                                />
+                              </q-td>
+                            </template>                      
+                          </q-table>
+
+                        </div>
+                      </q-td>
+                    </q-tr>
+                  </template>
+                </q-table>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </q-tab-panel>
+
+      <!-- Financial Model Tab Panels -->
+      <q-tab-panel
+        v-for="modelTab in financialModelTabs"
+        :key="modelTab.id"
+        :name="modelTab.id"
+        class="q-pa-md"
+      >
+        <FinancialModelTab
+          :tab-id="modelTab.id"
+          :initial-transaction-id="modelTab.transactionId"
+          :transactions="transactions"
+          @update-tab-name="updateFinancialModelTabName"
+        />
+      </q-tab-panel>
+    </q-tab-panels>
 
     <!-- Add Building Dialog -->
     <AddBuildingDialog
@@ -414,22 +424,29 @@
 
 <script setup>
 /* eslint-disable no-console */
+import { api } from '../services/api'
+
 import { onMounted, ref, computed, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import LinkBuildingDialog from '../components/transactions/LinkBuildingDialog.vue'
 import AddBuildingDialog from '../components/buildings/AddBuildingDialog.vue'
+import FinancialModelTab from '../components/financial_model/FinancialModelTab.vue'
 
 import { useTransactions } from '../composables/useTransactions'
 import { useBuildings } from '../composables/useBuildings'
-import { useLinkTransactionsBuildings } from '../composables/useLinkTransactionsBuildings'
 import { usePriorities } from '../composables/usePriorities'
 import { useParticipants } from '../composables/useParticipants'
-import { linkTransactionsBuildingsAPI, buildingsAPI } from '../services/api'
 
 const $q = useQuasar()
 
-// Composables - only destructure what you actually use
+// Add missing tab management state
+const activeTab = ref('transactions')
+const financialModelTabs = ref([])
+const financialModelTabCounter = ref(0)
+
+// Composables - updated to use the new structure
 const {
+  transactions,
   selectedTransactions,
   selectedTransaction,
   loadingTransactions,
@@ -445,10 +462,11 @@ const {
 } = useTransactions()
 
 const {
+  buildings,
+  availableBuildings,
   showAddBuildingDialog,
   addingBuilding,
   newBuildingForm,
-  availableBuildings,
   fetchBuildings,
   openAddBuildingDialog,
   cancelAddBuilding,
@@ -456,32 +474,37 @@ const {
 } = useBuildings()
 
 const {
-  showLinkBuildingDialog,
-  linkBuilding,
-  unlinkBuilding
-} = useLinkTransactionsBuildings(selectedTransaction)
-
-const {
+  priorities,
   sortedPriorities,
   fetchPriorities
 } = usePriorities()
 
 const {
+  participants,
   sortedParticipants,
   fetchParticipants,
   addNewParticipant
 } = useParticipants()
 
-// Reactive data
+// Local reactive data
 const expanded = ref([])
 const linkedBuildingsByTransaction = ref({})
 const loadingBuildingsByTransaction = ref({})
+const showLinkBuildingDialog = ref(false)  // Add this back
 const showAddParticipantDialog = ref(false)
 const newParticipantName = ref('')
 const addingParticipant = ref(false)
 const pendingParticipantSelection = ref(null)
 
-// Keep your original Table columns configuration exactly as is
+// Computed properties
+const participantOptionsWithAddNew = computed(() => {
+  return [
+    { id: 'add-new', participant: '+ ADD NEW PARTICIPANT' },
+    ...sortedParticipants.value
+  ]
+})
+
+// Keep your table columns exactly as they are
 const transactionColumns = [
   { name: 'actions', label: 'Actions', align: 'center', sortable: false, headerStyle: 'width: 100px', style: 'width: 100px' },
   { name: 'priority_id', label: 'Priority', field: 'priority_id', sortable: true, align: 'left', headerStyle: 'width: 80px', style: 'width: 80px' },
@@ -497,30 +520,22 @@ const transactionColumns = [
   { name: 'description', label: 'Description', field: 'description', sortable: true, align: 'left', headerStyle: 'width: 150px', style: 'width: 150px' }
 ]
 
-// Computed properties
-const participantOptionsWithAddNew = computed(() => {
-  return [
-    { id: 'add-new', participant: '+ ADD NEW PARTICIPANT' },
-    ...sortedParticipants.value
-  ]
-})
+const buildingColumns = [
+  { name: 'address_street', label: 'Street', field: 'address_street', sortable: true, align: 'left' },
+  { name: 'address_city_id', label: 'City', field: 'address_city_id', sortable: true, align: 'left' },
+  { name: 'address_state_id', label: 'State', field: 'address_state_id', sortable: true, align: 'left' },
+  { name: 'address_neighborhood_id', label: 'Neighborhood', field: 'address_neighborhood_id', sortable: true, align: 'left' },
+  { name: 'description', label: 'Description', field: 'description', sortable: true, align: 'left' },
+  { name: 'square_feet', label: 'Square Feet', field: 'square_feet', sortable: true, align: 'right' }
+]
 
-// Methods
+// Updated methods
 const toggleExpand = async (props) => {
-  console.log('🔄 Before toggling props.expand value - transaction:', props.row.name, 'props.expand=', props.expand)
+  props.expand = !props.expand
   
-  props.expand = !props.expand // Now toggle
-  
-  console.log('🔄 After toggling props.expand value - transaction:', props.row.name, 'props.expand=', props.expand)
-  
-  // If row is now expanded (was collapsed before), fetch buildings
-  await nextTick(async () => { // Remove 'this.$' - just use 'nextTick'
-    console.log('🔄 Inside nextTick - transaction:', props.row.name, 'props.expand=', props.expand)
+  await nextTick(async () => {
     if (props.expand) {
-      console.log('🔍 Row now expanded - fetching buildings for:', props.row.name)
-      await fetchLinkedBuildingsForTransaction(props.row.id) // Remove 'this.' - just call the function directly
-    } else {
-      console.log('🔄 Row was expanded, now collapsed - no action needed for:', props.row.name)
+      await fetchLinkedBuildingsForTransaction(props.row.id)
     }
   })
 }
@@ -530,20 +545,17 @@ const getLinkedBuildingsForTransaction = (transactionId) => {
 }
 
 const fetchLinkedBuildingsForTransaction = async (transactionId) => {
-  console.log('🔍 Fetching linked buildings for transaction:', transactionId)
-  
   loadingBuildingsByTransaction.value[transactionId] = true
   try {
-    const links = await linkTransactionsBuildingsAPI.getByTransactionId(transactionId)
-    console.log('✅ Links found for transaction', transactionId, ':', links)
+    // Use the generic api instead of linkTransactionsBuildingsAPI
+    const links = await api.query('link_transactions_buildings', { transaction_id: transactionId })
     
     if (links.length > 0) {
-      const buildingPromises = links.map(link => buildingsAPI.getById(link.building_id))
+      // Use the generic api instead of buildingsAPI
+      const buildingPromises = links.map(link => api.getById('buildings', link.building_id))
       const buildings = await Promise.all(buildingPromises)
-      console.log('✅ Buildings loaded for transaction', transactionId, ':', buildings)
       linkedBuildingsByTransaction.value[transactionId] = buildings
     } else {
-      console.log('ℹ️ No links found for transaction', transactionId)
       linkedBuildingsByTransaction.value[transactionId] = []
     }
   } catch (error) {
@@ -559,13 +571,13 @@ const handleLinkBuildingForTransaction = (transaction) => {
   showLinkBuildingDialog.value = true
 }
 
-const unlinkBuildingFromTransaction = async (building, transactionId) => {
+const linkBuilding = async (buildingId) => {
   try {
-    await unlinkBuilding(building)
-    delete linkedBuildingsByTransaction.value[transactionId]
-    await fetchLinkedBuildingsForTransaction(transactionId)
+    await api.createLink('link_transactions_buildings', selectedTransaction.value.id, buildingId)
+    showLinkBuildingDialog.value = false
+    await fetchLinkedBuildingsForTransaction(selectedTransaction.value.id)
   } catch (error) {
-    console.error('Failed to unlink building:', error)
+    console.error('Failed to link building:', error)
   }
 }
 
@@ -584,9 +596,7 @@ const handleAddParticipant = async () => {
   
   addingParticipant.value = true
   try {
-    console.log('🔄 Adding participant:', newParticipantName.value.trim())
     const newParticipant = await addNewParticipant(newParticipantName.value.trim())
-    console.log('✅ New participant created:', newParticipant)
     
     if (pendingParticipantSelection.value) {
       const { row, fieldName } = pendingParticipantSelection.value
@@ -596,19 +606,8 @@ const handleAddParticipant = async () => {
     
     showAddParticipantDialog.value = false
     newParticipantName.value = ''
-    
-    $q.notify({
-      color: 'positive',
-      message: 'Participant added successfully',
-      icon: 'check'
-    })
   } catch (error) {
     console.error('❌ Error adding participant:', error)
-    $q.notify({
-      color: 'negative',
-      message: 'Failed to add participant',
-      icon: 'report_problem'
-    })
   } finally {
     addingParticipant.value = false
   }
@@ -620,28 +619,62 @@ const cancelAddParticipant = () => {
   pendingParticipantSelection.value = null
 }
 
-const handleAddBuilding = () => {
-  openAddBuildingDialog()
+// Add the missing Financial Model tab methods
+const openFinancialModelTab = (transaction) => {
+  // Check if we already have 5 tabs open
+  if (financialModelTabs.value.length >= 5) {
+    $q.notify({
+      color: 'warning',
+      message: 'Maximum of 5 Financial Model tabs allowed',
+      icon: 'warning'
+    })
+    return
+  }
+
+  financialModelTabCounter.value++
+  const tabId = `financial-model-${financialModelTabCounter.value}`
+  
+  const newTab = {
+    id: tabId,
+    transactionId: transaction.id,
+    transactionName: transaction.name || `Transaction ${transaction.id}`
+  }
+  
+  financialModelTabs.value.push(newTab)
+  activeTab.value = tabId
 }
 
-const handleLinkBuilding = () => {
-  showLinkBuildingDialog.value = true
+const closeFinancialModelTab = (tabId) => {
+  const index = financialModelTabs.value.findIndex(tab => tab.id === tabId)
+  if (index !== -1) {
+    financialModelTabs.value.splice(index, 1)
+    
+    // If we closed the active tab, switch to transactions tab
+    if (activeTab.value === tabId) {
+      if (financialModelTabs.value.length > 0) {
+        activeTab.value = financialModelTabs.value[financialModelTabs.value.length - 1].id
+      } else {
+        activeTab.value = 'transactions'
+      }
+    }
+  }
+}
+
+const updateFinancialModelTabName = (tabId, newTransactionName) => {
+  const tab = financialModelTabs.value.find(t => t.id === tabId)
+  if (tab) {
+    tab.transactionName = newTransactionName
+  }
 }
 
 // Lifecycle
 onMounted(async () => {
-  console.log('🚀 Starting data fetch...')
-  
   await Promise.all([
     fetchTransactions(),
     fetchBuildings(),
     fetchPriorities(),
     fetchParticipants()
   ])
-  
-  console.log('📊 All data loaded!')
-//  console.log('🎯 Priorities:', sortedPriorities.value)
-//  console.log('🎯 Participants:', sortedParticipants.value)
 })
 </script>
 

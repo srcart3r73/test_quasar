@@ -1,6 +1,6 @@
 import { ref, computed, reactive } from 'vue'
 import { useQuasar } from 'quasar'
-import { buildingsAPI, handleAPIError } from '../services/api'
+import { api, handleAPIError } from '../services/api'
 
 export function useBuildings() {
   const $q = useQuasar()
@@ -27,7 +27,8 @@ export function useBuildings() {
   // Methods
   const fetchBuildings = async () => {
     try {
-      buildings.value = await buildingsAPI.getAll()
+      buildings.value = await api.getAll('buildings')
+      console.log('✅ Buildings loaded:', buildings.value.length)
     } catch (error) {
       const { error: errorType, message } = handleAPIError(error)
       $q.notify({
@@ -35,6 +36,7 @@ export function useBuildings() {
         message: `Failed to fetch buildings: ${message}`,
         icon: 'report_problem'
       })
+      buildings.value = []
     }
   }
 
@@ -66,10 +68,10 @@ export function useBuildings() {
     try {
       console.log('🏢 Creating new building:', newBuildingForm)
       
-      const newBuilding = await buildingsAPI.create(newBuildingForm)
+      const newBuilding = await api.create('buildings', { ...newBuildingForm })
       console.log('✅ Building created:', newBuilding)
       
-      buildings.value.push(newBuilding)
+      buildings.value.unshift(newBuilding)
       
       showAddBuildingDialog.value = false
       Object.keys(newBuildingForm).forEach(key => {
@@ -97,6 +99,74 @@ export function useBuildings() {
     }
   }
 
+  const saveField = async (row, fieldName, value) => {
+    try {
+      console.log('Saving building field:', row.id, fieldName, value)
+      
+      const updateData = { [fieldName]: value }
+      await api.update('buildings', row.id, updateData)
+      
+      const index = buildings.value.findIndex(b => b.id === row.id)
+      if (index !== -1) {
+        buildings.value[index][fieldName] = value
+      }
+      
+      $q.notify({
+        color: 'positive',
+        message: `${fieldName} updated`,
+        icon: 'check',
+        timeout: 1000
+      })
+      
+      return true
+    } catch (error) {
+      const { error: errorType, message } = handleAPIError(error)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to update ${fieldName}: ${message}`,
+        icon: 'report_problem'
+      })
+      console.error('Save field error:', error)
+      return false
+    }
+  }
+
+  const deleteBuilding = async (building) => {
+    const displayName = building.address_street || `Building #${building.id}`
+    
+    return new Promise((resolve) => {
+      $q.dialog({
+        title: 'Confirm Delete',
+        message: `Are you sure you want to delete building "${displayName}"?`,
+        cancel: true,
+        persistent: true
+      }).onOk(async () => {
+        try {
+          await api.delete('buildings', building.id)
+          buildings.value = buildings.value.filter(b => b.id !== building.id)
+          
+          $q.notify({
+            color: 'positive',
+            message: 'Building deleted successfully',
+            icon: 'check'
+          })
+          
+          resolve(true)
+        } catch (error) {
+          const { error: errorType, message } = handleAPIError(error)
+          $q.notify({
+            color: 'negative',
+            message: `Failed to delete building: ${message}`,
+            icon: 'report_problem'
+          })
+          resolve(false)
+        }
+      }).onCancel(() => {
+        resolve(false)
+      })
+    })
+  }
+
   return {
     // State
     buildings,
@@ -111,6 +181,8 @@ export function useBuildings() {
     fetchBuildings,
     openAddBuildingDialog,
     cancelAddBuilding,
-    addNewBuilding
+    addNewBuilding,
+    saveField,
+    deleteBuilding
   }
 }
