@@ -32,6 +32,12 @@ export function useParticipants() {
       console.error('❌ Participants fetch error:', error)
       const { error: errorType, message } = handleAPIError(error)
       console.error('Failed to fetch participants:', message)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to fetch participants: ${message}`,
+        errorType: `Error type: ${errorType}`,
+        icon: 'report_problem'
+      })
       participants.value = []
     } finally {
       loadingParticipants.value = false
@@ -57,6 +63,12 @@ export function useParticipants() {
       return newParticipant
     } catch (error) {
       const { error: errorType, message } = handleAPIError(error)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to add a participant: ${message}`,
+        errorType: `Error type: ${errorType}`,
+        icon: 'report_problem'
+      })
       console.error('Failed to add participant:', message)
       
       $q.notify({
@@ -94,6 +106,7 @@ export function useParticipants() {
       $q.notify({
         color: 'negative',
         message: `Failed to update ${fieldName}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       console.error('Save field error:', error)
@@ -127,6 +140,7 @@ export function useParticipants() {
           $q.notify({
             color: 'negative',
             message: `Failed to delete participant: ${message}`,
+            errorType: `Error type: ${errorType}`,
             icon: 'report_problem'
           })
           resolve(false)

@@ -31,6 +31,12 @@ export function usePriorities() {
     } catch (error) {
       console.error('❌ Priorities fetch error:', error)
       const { error: errorType, message } = handleAPIError(error)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to fetch priorities: ${message}`,
+        errorType: `Error type: ${errorType}`,
+        icon: 'report_problem'
+      })
       console.error('Failed to fetch priorities:', message)
       priorities.value = []
     } finally {
@@ -53,6 +59,12 @@ export function usePriorities() {
       return newPriority
     } catch (error) {
       const { error: errorType, message } = handleAPIError(error)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to add a priority: ${message}`,
+        errorType: `Error type: ${errorType}`,
+        icon: 'report_problem'
+      })
       console.error('Failed to add priority:', message)
       
       $q.notify({
@@ -90,6 +102,7 @@ export function usePriorities() {
       $q.notify({
         color: 'negative',
         message: `Failed to update ${fieldName}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       console.error('Save field error:', error)
@@ -123,6 +136,7 @@ export function usePriorities() {
           $q.notify({
             color: 'negative',
             message: `Failed to delete priority: ${message}`,
+            errorType: `Error type: ${errorType}`,
             icon: 'report_problem'
           })
           resolve(false)

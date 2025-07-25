@@ -34,6 +34,7 @@ export function useBuildings() {
       $q.notify({
         color: 'negative',
         message: `Failed to fetch buildings: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       buildings.value = []
@@ -90,7 +91,8 @@ export function useBuildings() {
       const { error: errorType, message } = handleAPIError(error)
       $q.notify({
         color: 'negative',
-        message: `Failed to add building: ${message}`,
+        message: `Failed to add a building: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       return null
@@ -124,6 +126,7 @@ export function useBuildings() {
       $q.notify({
         color: 'negative',
         message: `Failed to update ${fieldName}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       console.error('Save field error:', error)
@@ -157,6 +160,7 @@ export function useBuildings() {
           $q.notify({
             color: 'negative',
             message: `Failed to delete building: ${message}`,
+        errorType: `Error type: ${errorType}`,
             icon: 'report_problem'
           })
           resolve(false)

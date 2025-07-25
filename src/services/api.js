@@ -17,6 +17,7 @@ export const api = {
   // Get all records
   async getAll(endpoint) {
     const response = await apiClient.get(`/${endpoint}`)
+    console.log(`🔍 Fetched all records from ${endpoint}:`, response.data)
     return response.data
   },
 
@@ -76,11 +77,6 @@ export const api = {
     }
     
     console.log('🔗 Creating link with:')
-    console.log('  Endpoint:', linkEndpoint)
-    console.log('  Primary ID:', primaryId)
-    console.log('  Related ID:', relatedId)
-    console.log('  Primary Key:', primaryKey)
-    console.log('  Related Key:', relatedKey)
     console.log('  Payload:', payload)
     
     const response = await apiClient.post(`/${linkEndpoint}`, payload)

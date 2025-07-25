@@ -1,11 +1,9 @@
 // src/composables/useTransactions.js
 import { ref, computed } from 'vue'
-import { useQuasar } from 'quasar'
 import { useGenericCRUD } from './useGenericCRUD'
 import { api, handleAPIError } from '../services/api'
 
 export function useTransactions() {
-  const $q = useQuasar()
   
   // Use the generic CRUD for basic operations
   const transactionsCRUD = useGenericCRUD('transactions', {
@@ -30,7 +28,7 @@ export function useTransactions() {
     selectedItem: selectedTransaction,
     loading: loadingTransactions,
     searchQuery,
-    filteredItems: filteredTransactions,
+//    filteredItems: filteredTransactions,
     create: addNewTransaction,
     saveField,
     deleteItem: deleteTransaction,
@@ -87,7 +85,7 @@ export function useTransactions() {
       
     } catch (error) {
       const { error: errorType, message } = handleAPIError(error)
-      console.error('Failed to fetch transactions:', message)
+      console.error('Failed to fetch transactions:', message, errorType)
       transactions.value = []
       priorities.value = []
     } finally {

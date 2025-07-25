@@ -9,7 +9,7 @@
         <div class="row q-gutter-md">
           <div class="col-12">
             <q-input
-              v-model="form.address_street"
+              v-model="localForm.address_street"
               label="Street Address"
               filled
               dense
@@ -18,7 +18,7 @@
           </div>
           <div class="col-5">
             <q-input
-              v-model="form.address_city"
+              v-model="localForm.address_city_id"
               label="City"
               filled
               dense
@@ -26,7 +26,7 @@
           </div>
           <div class="col-3">
             <q-input
-              v-model="form.address_state"
+              v-model="localForm.address_state_id"
               label="State"
               filled
               dense
@@ -34,7 +34,7 @@
           </div>
           <div class="col-4">
             <q-input
-              v-model="form.address_zip"
+              v-model="localForm.address_zip"
               label="ZIP Code"
               filled
               dense
@@ -42,7 +42,7 @@
           </div>
           <div class="col-6">
             <q-input
-              v-model.number="form.square_feet"
+              v-model.number="localForm.square_feet"
               label="Square Feet"
               type="number"
               filled
@@ -51,7 +51,7 @@
           </div>
           <div class="col-6">
             <q-input
-              v-model.number="form.year_built"
+              v-model.number="localForm.year_built"
               label="Year Built"
               type="number"
               filled
@@ -60,7 +60,7 @@
           </div>
           <div class="col-12">
             <q-input
-              v-model="form.description"
+              v-model="localForm.description"
               label="Description"
               type="textarea"
               filled
@@ -77,7 +77,7 @@
           label="Add Building"
           color="primary"
           @click="$emit('add')"
-          :disable="!form.address_street"
+          :disable="!localForm.address_street"
           :loading="loading"
         />
       </q-card-actions>
@@ -86,8 +86,10 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+
 // Props
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true
@@ -102,10 +104,18 @@ defineProps({
   }
 })
 
-// Emits
-defineEmits([
-  'update:modelValue',
-  'add',
-  'cancel'
-])
+// Local copy of form
+const localForm = ref({ ...props.form })
+
+// Watch for changes from parent and update local copy
+watch(() => props.form, (newForm) => {
+  localForm.value = { ...newForm }
+})
+
+// When dialog opens, reset localForm to props.form
+watch(() => props.modelValue, (val) => {
+  if (val) {
+    localForm.value = { ...props.form }
+  }
+})
 </script>

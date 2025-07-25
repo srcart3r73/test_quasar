@@ -175,7 +175,48 @@
                           map-options
                           clearable
                           hide-dropdown-icon
-                          @update:model-value="saveField(props.row, 'priority_id', $event)"
+                          @update:model-value="saveTransactionField(props.row, 'priority_id', $event)"
+                        />
+                      </q-td>
+
+                      <!-- ID column -->
+                      <q-td key="id" :props="props">
+                        {{ props.row.id }}
+                      </q-td>
+
+                      <!-- Name column -->
+                      <q-td key="name" :props="props">
+                        <q-input
+                          v-model="props.row.name"
+                          dense
+                          borderless
+                          @blur="saveTransactionField(props.row, 'name', props.row.name)"
+                        >
+                          <q-tooltip v-if="props.row.name">
+                            {{ props.row.name }}
+                          </q-tooltip>
+                        </q-input>
+                      </q-td>
+
+                      <!-- Date listing column -->
+                      <q-td key="date_listing" :props="props">
+                        <q-input
+                          v-model="props.row.date_listing"
+                          type="date"
+                          dense
+                          borderless
+                          @blur="saveTransactionField(props.row, 'date_listing', props.row.date_listing)"
+                        />
+                      </q-td>
+
+                      <!-- Date closing column -->
+                      <q-td key="date_closing" :props="props">
+                        <q-input
+                          v-model="props.row.date_closing"
+                          type="date"
+                          dense
+                          borderless
+                          @blur="saveTransactionField(props.row, 'date_closing', props.row.date_closing)"
                         />
                       </q-td>
 
@@ -185,7 +226,7 @@
                           type="date"
                           dense
                           borderless
-                          @blur="saveField(props.row, 'date_pursuit', props.row.date_pursuit)"
+                          @blur="saveTransactionField(props.row, 'date_pursuit', props.row.date_pursuit)"
                         />
                       </q-td>
 
@@ -277,7 +318,7 @@
                           v-model="props.row.notes"
                           dense
                           borderless
-                          @blur="saveField(props.row, 'notes', props.row.notes)"
+                          @blur="saveTransactionField(props.row, 'notes', props.row.notes)"
                         >
                           <q-tooltip v-if="props.row.notes">
                             {{ props.row.notes }}
@@ -291,7 +332,7 @@
                           v-model="props.row.description"
                           dense
                           borderless
-                          @blur="saveField(props.row, 'description', props.row.description)"
+                          @blur="saveTransactionField(props.row, 'description', props.row.description)"
                         >
                           <q-tooltip v-if="props.row.description">
                             {{ props.row.description }}
@@ -334,14 +375,90 @@
                           >
                             <template v-slot:body-cell="buildingProps">
                               <q-td :props="buildingProps" class="text-caption">
-                                <q-input
-                                  v-model="buildingProps.row[buildingProps.col.name]"
-                                  auto-width
-                                  dense
-                                  borderless
-                                  class="text-caption"
-                                  input-class="text-caption"
-                                />
+
+                                <template v-if="buildingProps.col.name === 'address_city_id'">
+                                  <q-select
+                                    v-model="buildingProps.row.address_city_id"
+                                    :options="cityOptionsWithAddNew"
+                                    option-value="id"
+                                    option-label="city"
+                                    dense
+                                    borderless
+                                    emit-value
+                                    map-options
+                                    clearable
+                                    hide-dropdown-icon
+                                    @update:model-value="saveBuildingField(buildingProps.row, 'address_city_id', $event)"
+                                  >
+                                    <template v-slot:option="scope">
+                                      <q-item v-bind="scope.itemProps">
+                                        <q-item-section>
+                                          <q-item-label>{{ scope.opt.city }}</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                    </template>
+                                  </q-select>
+                                </template>
+
+                                <template v-else-if="buildingProps.col.name === 'address_state_id'">
+                                  <q-select
+                                    v-model="buildingProps.row.address_state_id"
+                                    :options="stateOptionsWithAddNew"
+                                    option-value="id"
+                                    option-label="state"
+                                    dense
+                                    borderless
+                                    emit-value
+                                    map-options
+                                    clearable
+                                    hide-dropdown-icon
+                                    @update:model-value="saveBuildingField(buildingProps.row, 'address_state_id', $event)"
+                                  >
+                                    <template v-slot:option="scope">
+                                      <q-item v-bind="scope.itemProps">
+                                        <q-item-section>
+                                          <q-item-label>{{ scope.opt.state }}</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                    </template>
+                                  </q-select>
+                                </template>
+
+                                <template v-else-if="buildingProps.col.name === 'neighborhood_id'">
+                                  <q-select
+                                    v-model="buildingProps.row.neighborhood_id"
+                                    :options="neighborhoodOptionsWithAddNew"
+                                    option-value="id"
+                                    option-label="neighborhood"
+                                    dense
+                                    borderless
+                                    emit-value
+                                    map-options
+                                    clearable
+                                    hide-dropdown-icon
+                                    @update:model-value="async (val) => { try { await saveBuildingField(buildingProps.row, 'neighborhood_id', val) } catch (e) { $q.notify({ color: 'negative', message: 'Failed to save neighborhood', caption: e.message }) } }"
+                                  >
+                                    <template v-slot:option="scope">
+                                      <q-item v-bind="scope.itemProps">
+                                        <q-item-section>
+                                          <q-item-label>{{ scope.opt.neighborhood }}</q-item-label>
+                                        </q-item-section>
+                                      </q-item>
+                                    </template>
+                                  </q-select>
+                                </template>
+
+                                <template v-else>
+                                  <q-input
+                                    v-model="buildingProps.row[buildingProps.col.name]"
+                                    auto-width
+                                    dense
+                                    borderless
+                                    class="text-caption"
+                                    input-class="text-caption"
+                                  />
+                                </template>
+
                               </q-td>
                             </template>                      
                           </q-table>
@@ -349,6 +466,8 @@
                         </div>
                       </q-td>
                     </q-tr>
+
+                    
                   </template>
                 </q-table>
               </q-card-section>
@@ -356,6 +475,7 @@
           </div>
         </div>
       </q-tab-panel>
+
 
       <!-- Financial Model Tab Panels -->
       <q-tab-panel
@@ -390,41 +510,74 @@
       @link="linkBuilding"
     />
 
-    <!-- Add Participant Dialog -->
-    <q-dialog v-model="showAddParticipantDialog" persistent>
+    <!-- GENERAL Add New Record Dialog -->
+    <q-dialog v-model="showAddDialog" persistent>
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">Add New Participant</div>
+          <div class="text-h6">{{ addDialogLabel }}</div>
         </q-card-section>
-
         <q-card-section class="q-pt-none">
-          <q-input
-            dense
-            v-model="newParticipantName"
-            autofocus
-            label="Participant Name"
-            @keyup.enter="handleAddParticipant"
-          />
+          <template v-if="addDialogEntity === 'states'">
+            <q-input dense v-model="newStateName" autofocus label="State Name" @keyup.enter="handleAddRecord" />
+            <q-input dense v-model="newStateShort" label="State Abbreviation" @keyup.enter="handleAddRecord" />
+          </template>
+          <template v-else-if="addDialogEntity === 'cities'">
+            <q-input dense v-model="newCityName" autofocus label="City Name" @keyup.enter="handleAddRecord" />
+            <q-select
+              v-model="newCityStateId"
+              :options="stateOptionsWithAddNew"
+              option-value="id"
+              option-label="state"
+              dense borderless emit-value map-options clearable label="State"
+            />
+          </template>
+          <template v-else-if="addDialogEntity === 'neighborhoods'">
+            <q-input dense v-model="newNeighborhoodName" autofocus label="Neighborhood Name" @keyup.enter="handleAddRecord" />
+            <q-select
+              v-model="newNeighborhoodCityId"
+              :options="neighborhoodCityOptions"
+              option-value="id"
+              option-label="label"
+              dense borderless emit-value map-options clearable label="City"
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      {{ scope.opt.city }} <span v-if="scope.opt.state_short">({{ scope.opt.state_short }})</span>
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </template>
+          <template v-else-if="addDialogEntity === 'participants'">
+            <q-input dense v-model="newParticipantName" autofocus label="Participant Name" @keyup.enter="handleAddRecord" />
+            <q-select
+              v-model="newParticipantTypeId"
+              :options="participantTypeOptions"
+              option-value="id"
+              option-label="name"
+              dense borderless emit-value map-options clearable label="Participant Type"
+            />
+          </template>
+          <template v-else>
+            <q-input dense v-model="newRecordName" autofocus :label="`${addDialogLabel} Name`" @keyup.enter="handleAddRecord" />
+          </template>
         </q-card-section>
-
         <q-card-actions align="right" class="text-primary">
-          <q-btn flat label="Cancel" @click="cancelAddParticipant" />
-          <q-btn 
-            flat 
-            label="Add" 
-            @click="handleAddParticipant"
-            :loading="addingParticipant"
-            :disable="!newParticipantName.trim()"
-          />
+          <q-btn flat label="Cancel" @click="cancelAddRecord" />
+          <q-btn flat label="Add" @click="handleAddRecord" :disable="addDialogDisabled" />
         </q-card-actions>
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-/* eslint-disable no-console */
 import { api } from '../services/api'
+import { useGenericCRUD } from '../composables/useGenericCRUD'
 
 import { onMounted, ref, computed, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
@@ -454,7 +607,7 @@ const {
   filteredTransactions,
   fetchTransactions,
   addNewTransaction,
-  saveField,
+  saveField: saveTransactionField,
   deleteTransaction,
   deleteSelectedTransactions,
   selectTransaction,
@@ -462,29 +615,35 @@ const {
 } = useTransactions()
 
 const {
-  buildings,
   availableBuildings,
-  showAddBuildingDialog,
   addingBuilding,
-  newBuildingForm,
   fetchBuildings,
-  openAddBuildingDialog,
+  showAddBuildingDialog,
+  newBuildingForm,
+  //  openAddBuildingDialog,
   cancelAddBuilding,
-  addNewBuilding
+  addNewBuilding,
+  saveField: saveBuildingField
 } = useBuildings()
 
 const {
-  priorities,
+//  priorities,const cancelAddRecord = () => {
   sortedPriorities,
   fetchPriorities
 } = usePriorities()
 
 const {
-  participants,
+  // participants,
   sortedParticipants,
   fetchParticipants,
-  addNewParticipant
+  addParticipant
 } = useParticipants()
+
+const { items: cities, create: addCity, fetchAll: fetchCities } = useGenericCRUD('cities')
+const { items: states, create: addState, fetchAll: fetchStates } = useGenericCRUD('states')
+const { items: neighborhoods, create: addNeighborhood, fetchAll: fetchNeighborhoods } = useGenericCRUD('neighborhoods')
+const { items: participantTypes, fetchAll: fetchParticipantTypes } = useGenericCRUD('participant_types')
+
 
 // Local reactive data
 const expanded = ref([])
@@ -493,23 +652,133 @@ const loadingBuildingsByTransaction = ref({})
 const showLinkBuildingDialog = ref(false)  // Add this back
 const showAddParticipantDialog = ref(false)
 const newParticipantName = ref('')
-const addingParticipant = ref(false)
 const pendingParticipantSelection = ref(null)
+const newStateName = ref('')
+const newStateShort = ref('')
+const newCityName = ref('')
+const newCityStateId = ref(null)
+const newNeighborhoodName = ref('')
+const newNeighborhoodCityId = ref(null)
+const newParticipantTypeId = ref(null)
 
-// Computed properties
-const participantOptionsWithAddNew = computed(() => {
-  return [
-    { id: 'add-new', participant: '+ ADD NEW PARTICIPANT' },
-    ...sortedParticipants.value
-  ]
-})
+
+// GENERAL CRUD Map
+const crudMap = {
+  cities: { create: addCity, items: cities },
+  states: { create: addState, items: states },
+  neighborhoods: { create: addNeighborhood, items: neighborhoods },
+  participants: { create: addParticipant, items: sortedParticipants }
+}
+
+// GENERAL Map for Entity Fields 
+const entityFieldMap = {
+  cities: ['city', 'state_id'],
+  states: ['state', 'state_short'],
+  neighborhoods: ['neighborhood', 'city_id'],
+  participants: ['participant', 'participant_type_id']
+}
+
+// GENERAL Reactive Data
+const showAddDialog = ref(false)
+const newRecordName = ref('')
+const pendingSelection = ref(null)
+const addDialogLabel = ref('')
+const addDialogEntity = ref('') // e.g., 'cities', 'states', 'neighborhoods', 'participants'
+
+// GENERAL Computed Options with Add New
+const optionsWithAddNew = (entity, labelKey) => computed(() => [
+  { id: 'add-new', [labelKey]: `+ ADD NEW ${entity.toUpperCase()}` },
+  ...crudMap[entity].items.value
+])
+
+// GENERAL Select Handler
+//const handleSelect = async (row, fieldName, selectedValue, entity) => {
+//  if (selectedValue === 'add-new') {
+//    pendingSelection.value = { row, fieldName, entity }
+//    addDialogLabel.value = `Add New ${entity.charAt(0).toUpperCase() + entity.slice(1)}`
+//    showAddDialog.value = true
+//    newRecordName.value = ''
+//    addDialogEntity.value = entity
+//  } else {
+//    await saveField(row, fieldName, selectedValue)
+//  }
+//}
+
+const handleAddRecord = async () => {
+  let payload = {}
+  const entity = addDialogEntity.value
+  if (entity === 'states') {
+    payload = { state: newStateName.value, state_short: newStateShort.value }
+  } else if (entity === 'cities') {
+    payload = { city: newCityName.value, state_id: newCityStateId.value }
+  } else if (entity === 'neighborhoods') {
+    payload = { neighborhood: newNeighborhoodName.value, city_id: newNeighborhoodCityId.value }
+  } else if (entity === 'participants') {
+    payload = { participant: newParticipantName.value, participant_type_id: newParticipantTypeId.value }
+  } else {
+    payload = { [entityFieldMap[entity][0]]: newRecordName.value }
+  }
+  const createFn = crudMap[entity].create
+  const newRecord = await createFn(payload)
+  crudMap[entity].items.value.push(newRecord)
+  if (pendingSelection.value) {
+    const { row, fieldName } = pendingSelection.value
+    row[fieldName] = newRecord.id
+    pendingSelection.value = null
+  }
+  showAddDialog.value = false
+  // Reset dialog fields
+  newStateName.value = ''
+  newStateShort.value = ''
+  newCityName.value = ''
+  newCityStateId.value = null
+  newNeighborhoodName.value = ''
+  newNeighborhoodCityId.value = null
+  newParticipantName.value = ''
+  newParticipantTypeId.value = null
+  newRecordName.value = ''
+}
+
+// GENERAL Cancel Add Dialog
+const cancelAddRecord = () => {
+  showAddDialog.value = false
+  pendingSelection.value = null
+  newStateName.value = ''
+  newStateShort.value = ''
+  newCityName.value = ''
+  newCityStateId.value = null
+  newNeighborhoodName.value = ''
+  newNeighborhoodCityId.value = null
+  newParticipantName.value = ''
+  newParticipantTypeId.value = null
+  newRecordName.value = ''
+}
+
+
+// INDIVIDUAL Computed Options with Add New
+const participantOptionsWithAddNew = optionsWithAddNew('participants', 'participant')
+const cityOptionsWithAddNew = optionsWithAddNew('cities', 'city')
+const stateOptionsWithAddNew = optionsWithAddNew('states', 'state')
+const neighborhoodOptionsWithAddNew = optionsWithAddNew('neighborhoods', 'neighborhood')
+const neighborhoodCityOptions = computed(() =>
+  cities.value.map(city => ({
+    id: city.id,
+    city: city.city,
+    state_short: states.value.find(s => s.id === city.state_id)?.state_short || '',
+    label: `${city.city}${city.state_id ? ' (' + (states.value.find(s => s.id === city.state_id)?.state_short || '') + ')' : ''}`
+  }))
+)
+const participantTypeOptions = computed(() => [
+  ...participantTypes.value
+])
+
 
 // Keep your table columns exactly as they are
 const transactionColumns = [
   { name: 'actions', label: 'Actions', align: 'center', sortable: false, headerStyle: 'width: 100px', style: 'width: 100px' },
   { name: 'priority_id', label: 'Priority', field: 'priority_id', sortable: true, align: 'left', headerStyle: 'width: 80px', style: 'width: 80px' },
   { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left', headerStyle: 'width: 60px', style: 'width: 60px' },
-  { name: 'name', label: 'Name', field: 'name', sortable: true, align: 'left', headerStyle: 'width: 200px', style: 'width: 200px' },
+  { name: 'name', label: 'Name (address as a proxy)', field: 'name', sortable: true, align: 'left', headerStyle: 'width: 200px', style: 'width: 200px' },
   { name: 'date_listing', label: 'Date Listed', field: 'date_listing', sortable: true, align: 'left', headerStyle: 'width: 120px', style: 'width: 120px' },
   { name: 'date_closing', label: 'Date Closing', field: 'date_closing', sortable: true, align: 'left', headerStyle: 'width: 120px', style: 'width: 120px' },
   { name: 'date_pursuit', label: 'Date Pursuit', field: 'date_pursuit', sortable: true, align: 'left', headerStyle: 'width: 120px', style: 'width: 120px' },
@@ -524,7 +793,7 @@ const buildingColumns = [
   { name: 'address_street', label: 'Street', field: 'address_street', sortable: true, align: 'left' },
   { name: 'address_city_id', label: 'City', field: 'address_city_id', sortable: true, align: 'left' },
   { name: 'address_state_id', label: 'State', field: 'address_state_id', sortable: true, align: 'left' },
-  { name: 'address_neighborhood_id', label: 'Neighborhood', field: 'address_neighborhood_id', sortable: true, align: 'left' },
+  { name: 'neighborhood_id', label: 'Neighborhood', field: 'neighborhood_id', sortable: true, align: 'left' },
   { name: 'description', label: 'Description', field: 'description', sortable: true, align: 'left' },
   { name: 'square_feet', label: 'Square Feet', field: 'square_feet', sortable: true, align: 'right' }
 ]
@@ -587,37 +856,10 @@ const handleParticipantSelect = async (row, fieldName, selectedValue) => {
     showAddParticipantDialog.value = true
     newParticipantName.value = ''
   } else {
-    await saveField(row, fieldName, selectedValue)
+    await saveTransactionField(row, fieldName, selectedValue)
   }
 }
 
-const handleAddParticipant = async () => {
-  if (!newParticipantName.value.trim()) return
-  
-  addingParticipant.value = true
-  try {
-    const newParticipant = await addNewParticipant(newParticipantName.value.trim())
-    
-    if (pendingParticipantSelection.value) {
-      const { row, fieldName } = pendingParticipantSelection.value
-      await saveField(row, fieldName, newParticipant.id)
-      pendingParticipantSelection.value = null
-    }
-    
-    showAddParticipantDialog.value = false
-    newParticipantName.value = ''
-  } catch (error) {
-    console.error('❌ Error adding participant:', error)
-  } finally {
-    addingParticipant.value = false
-  }
-}
-
-const cancelAddParticipant = () => {
-  showAddParticipantDialog.value = false
-  newParticipantName.value = ''
-  pendingParticipantSelection.value = null
-}
 
 // Add the missing Financial Model tab methods
 const openFinancialModelTab = (transaction) => {
@@ -633,13 +875,11 @@ const openFinancialModelTab = (transaction) => {
 
   financialModelTabCounter.value++
   const tabId = `financial-model-${financialModelTabCounter.value}`
-  
   const newTab = {
     id: tabId,
     transactionId: transaction.id,
     transactionName: transaction.name || `Transaction ${transaction.id}`
   }
-  
   financialModelTabs.value.push(newTab)
   activeTab.value = tabId
 }
@@ -673,7 +913,11 @@ onMounted(async () => {
     fetchTransactions(),
     fetchBuildings(),
     fetchPriorities(),
-    fetchParticipants()
+    fetchParticipants(),
+    fetchCities(),
+    fetchStates(),
+    fetchNeighborhoods(),
+    fetchParticipantTypes()
   ])
 })
 </script>

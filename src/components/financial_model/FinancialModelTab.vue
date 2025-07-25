@@ -294,89 +294,46 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { api, handleAPIError } from '../../services/api'
+import { useGenericCRUD } from '../../composables/useGenericCRUD'
 
 // Props
 const props = defineProps({
-  tabId: {
-    type: String,
-    required: true
-  },
-  initialTransactionId: {
-    type: [Number, String],
-    default: null
-  },
-  transactions: {
-    type: Array,
-    default: () => []
-  }
+  tabId: { type: String, required: true },
+  initialTransactionId: { type: [Number, String], default: null },
+  transactions: { type: Array, default: () => [] }
 })
 
-// Emits
 const emit = defineEmits(['update-tab-name'])
-
 const $q = useQuasar()
 
 // State
 const selectedTransactionId = ref(props.initialTransactionId)
 const selectedScenarioId = ref(null)
-const scenarios = ref([])
-const modelInputs = ref([])
-const lineItemTypes = ref([])
-const escalationTypes = ref([])
-
-// Loading states
-const loadingScenarios = ref(false)
-const loadingModelInputs = ref(false)
-const addingScenario = ref(false)
-const addingLineItemType = ref(false)
-const addingEscalationType = ref(false)
-
-// Dialog states
 const showAddScenarioDialog = ref(false)
 const showAddLineItemTypeDialog = ref(false)
 const showAddEscalationTypeDialog = ref(false)
-
-// Form states
-const newScenarioForm = ref({
-  name: '',
-  description: ''
-})
+const newScenarioForm = ref({ name: '', description: '' })
 const newLineItemTypeName = ref('')
 const newEscalationTypeName = ref('')
 const pendingLineItemTypeSelection = ref(null)
 const pendingEscalationTypeSelection = ref(null)
 
-// Computed Properties
-const transactionOptions = computed(() => {
-  return props.transactions.map(transaction => ({
-    id: transaction.id,
-    label: transaction.name || `Transaction ${transaction.id}`
-  }))
-})
 
-const scenarioOptionsWithAddNew = computed(() => {
-  return [
-    { id: 'add-new', name: '+ ADD NEW SCENARIO' },
-    ...scenarios.value
-  ]
-})
+// Destructure state and methods
+const { items: scenarios, create: addScenario, fetchAll: fetchScenarios } = useGenericCRUD('scenarios')
+const { items: modelInputs, create: addModelInput, saveField: saveModelInputField, deleteItem: deleteModelInput, fetchAll: fetchModelInputs, loading: loadingModelInputs } = useGenericCRUD('model_inputs')
+const { items: lineItemTypes, create: addLineItemType, fetchAll: fetchLineItemTypes } = useGenericCRUD('line_item_types')
+const { items: escalationTypes, create: addEscalationType, fetchAll: fetchEscalationTypes } = useGenericCRUD('escalation_types')
 
-const lineItemTypeOptionsWithAddNew = computed(() => {
-  return [
-    { id: 'add-new', name: '+ ADD NEW LINE ITEM TYPE' },
-    ...lineItemTypes.value
-  ]
-})
 
-const escalationTypeOptionsWithAddNew = computed(() => {
-  return [
-    { id: 'add-new', name: '+ ADD NEW ESCALATION TYPE' },
-    ...escalationTypes.value
-  ]
-})
+// Computed dropdown options
+const transactionOptions = computed(() => props.transactions.map(t => ({ id: t.id, label: t.name || `Transaction ${t.id}` })))
+const scenarioOptionsWithAddNew = computed(() => [{ id: 'add-new', name: '+ ADD NEW SCENARIO' }, ...scenarios.value])
+const lineItemTypeOptionsWithAddNew = computed(() => [{ id: 'add-new', name: '+ ADD NEW LINE ITEM TYPE' }, ...lineItemTypes.value])
+const escalationTypeOptionsWithAddNew = computed(() => [{ id: 'add-new', name: '+ ADD NEW ESCALATION TYPE' }, ...escalationTypes.value])
 
-// Model Inputs Table Columns
+
+// Table columns (unchanged)
 const modelInputColumns = [
   { name: 'actions', label: 'Actions', align: 'center', sortable: false, style: 'width: 80px' },
   { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left', style: 'width: 60px' },
@@ -393,82 +350,28 @@ const modelInputColumns = [
 ]
 
 // Watchers
-watch(selectedTransactionId, (newTransactionId) => {
+watch(selectedTransactionId, async (newTransactionId) => {
   if (newTransactionId) {
     const transaction = props.transactions.find(t => t.id === newTransactionId)
-    if (transaction) {
-      emit('update-tab-name', props.tabId, transaction.name || `Transaction ${transaction.id}`)
-    }
-    fetchScenariosForTransaction(newTransactionId)
+    if (transaction) emit('update-tab-name', props.tabId, transaction.name || `Transaction ${transaction.id}`)
+    await fetchScenarios({ transaction_id: newTransactionId })
   }
   selectedScenarioId.value = null
   modelInputs.value = []
 })
 
-watch(selectedScenarioId, (newScenarioId) => {
+watch(selectedScenarioId, async (newScenarioId) => {
   if (newScenarioId && newScenarioId !== 'add-new') {
-    fetchModelInputsForScenario(newScenarioId)
+    await fetchModelInputs({ scenario_id: newScenarioId })
   } else {
     modelInputs.value = []
   }
 })
 
-// Methods - API Calls
-const fetchScenariosForTransaction = async (transactionId) => {
-  loadingScenarios.value = true
-  try {
-    const result = await api.query('scenarios', { transaction_id: transactionId })
-    scenarios.value = result
-    console.log('✅ Scenarios loaded:', result.length)
-  } catch (error) {
-    console.error('❌ Failed to fetch scenarios:', error)
-    scenarios.value = []
-  } finally {
-    loadingScenarios.value = false
-  }
-}
-
-const fetchModelInputsForScenario = async (scenarioId) => {
-  loadingModelInputs.value = true
-  try {
-    const result = await api.query('model_inputs', { scenario_id: scenarioId })
-    modelInputs.value = result
-    console.log('✅ Model inputs loaded:', result.length)
-  } catch (error) {
-    console.error('❌ Failed to fetch model inputs:', error)
-    modelInputs.value = []
-  } finally {
-    loadingModelInputs.value = false
-  }
-}
-
-const fetchLineItemTypes = async () => {
-  try {
-    const result = await api.getAll('line_item_types')
-    lineItemTypes.value = result
-    console.log('✅ Line item types loaded:', result.length)
-  } catch (error) {
-    console.error('❌ Failed to fetch line item types:', error)
-    lineItemTypes.value = []
-  }
-}
-
-const fetchEscalationTypes = async () => {
-  try {
-    const result = await api.getAll('escalation_types')
-    escalationTypes.value = result
-    console.log('✅ Escalation types loaded:', result.length)
-  } catch (error) {
-    console.error('❌ Failed to fetch escalation types:', error)
-    escalationTypes.value = []
-  }
-}
-
-// Methods - Event Handlers
+// Event Handlers
 const onTransactionChange = (transactionId) => {
   selectedTransactionId.value = transactionId
 }
-
 const onScenarioChange = (scenarioId) => {
   if (scenarioId === 'add-new') {
     showAddScenarioDialog.value = true
@@ -478,50 +381,33 @@ const onScenarioChange = (scenarioId) => {
   }
 }
 
-// Methods - Scenario Management
+// Scenario Management
 const handleAddScenario = async () => {
   if (!newScenarioForm.value.name.trim()) return
-  
-  addingScenario.value = true
   try {
-    const newScenario = await api.create('scenarios', {
+    const newScenario = await addScenario({
       name: newScenarioForm.value.name.trim(),
       description: newScenarioForm.value.description.trim(),
       transaction_id: selectedTransactionId.value
     })
-    
     scenarios.value.push(newScenario)
     selectedScenarioId.value = newScenario.id
     showAddScenarioDialog.value = false
-    
-    $q.notify({
-      color: 'positive',
-      message: 'Scenario added successfully',
-      icon: 'check'
-    })
+    $q.notify({ color: 'positive', message: 'Scenario added successfully', icon: 'check' })
   } catch (error) {
-    console.error('❌ Error adding scenario:', error)
-    const { message } = handleAPIError(error)
-    $q.notify({
-      color: 'negative',
-      message: `Failed to add scenario: ${message}`,
-      icon: 'report_problem'
-    })
-  } finally {
-    addingScenario.value = false
+    $q.notify({ color: 'negative', message: 'Failed to add scenario', icon: 'report_problem' , detail: error.message })
   }
 }
-
 const cancelAddScenario = () => {
   showAddScenarioDialog.value = false
   selectedScenarioId.value = null
   newScenarioForm.value = { name: '', description: '' }
 }
 
-// Methods - Model Input Management
+// Model Input Management
 const addNewModelInput = async () => {
   try {
-    const newModelInput = await api.create('model_inputs', {
+    const newModelInput = await addModelInput({
       scenario_id: selectedScenarioId.value,
       line_item: 'New Line Item',
       line_item_amount: 0,
@@ -534,88 +420,14 @@ const addNewModelInput = async () => {
       escalation_frequency: 12,
       line_item_description: ''
     })
-    
     modelInputs.value.unshift(newModelInput)
-    
-    $q.notify({
-      color: 'positive',
-      message: 'Model input added successfully',
-      icon: 'check'
-    })
+    $q.notify({ color: 'positive', message: 'Model input added successfully', icon: 'check' })
   } catch (error) {
-    console.error('❌ Error adding model input:', error)
-    const { message } = handleAPIError(error)
-    $q.notify({
-      color: 'negative',
-      message: `Failed to add model input: ${message}`,
-      icon: 'report_problem'
-    })
+    $q.notify({ color: 'negative', message: 'Failed to add model input', icon: 'report_problem', detail: error.message })
   }
 }
 
-const saveModelInputField = async (row, fieldName, value) => {
-  try {
-    const updateData = { [fieldName]: value }
-    await api.update('model_inputs', row.id, updateData)
-    
-    const index = modelInputs.value.findIndex(item => item.id === row.id)
-    if (index !== -1) {
-      modelInputs.value[index][fieldName] = value
-    }
-    
-    $q.notify({
-      color: 'positive',
-      message: `${fieldName} updated`,
-      icon: 'check',
-      timeout: 1000
-    })
-  } catch (error) {
-    console.error('❌ Save field error:', error)
-    const { message } = handleAPIError(error)
-    $q.notify({
-      color: 'negative',
-      message: `Failed to update ${fieldName}: ${message}`,
-      icon: 'report_problem'
-    })
-  }
-}
-
-const deleteModelInput = async (modelInput) => {
-  return new Promise((resolve) => {
-    $q.dialog({
-      title: 'Confirm Delete',
-      message: `Are you sure you want to delete model input "${modelInput.line_item || modelInput.id}"?`,
-      cancel: true,
-      persistent: true
-    }).onOk(async () => {
-      try {
-        await api.delete('model_inputs', modelInput.id)
-        modelInputs.value = modelInputs.value.filter(item => item.id !== modelInput.id)
-        
-        $q.notify({
-          color: 'positive',
-          message: 'Model input deleted successfully',
-          icon: 'check'
-        })
-        
-        resolve(true)
-      } catch (error) {
-        console.error('❌ Delete error:', error)
-        const { message } = handleAPIError(error)
-        $q.notify({
-          color: 'negative',
-          message: `Failed to delete model input: ${message}`,
-          icon: 'report_problem'
-        })
-        resolve(false)
-      }
-    }).onCancel(() => {
-      resolve(false)
-    })
-  })
-}
-
-// Methods - Line Item Type Management
+// Line Item Type Management
 const handleLineItemTypeSelect = async (row, selectedValue) => {
   if (selectedValue === 'add-new') {
     pendingLineItemTypeSelection.value = row
@@ -625,51 +437,29 @@ const handleLineItemTypeSelect = async (row, selectedValue) => {
     await saveModelInputField(row, 'line_item_type_id', selectedValue)
   }
 }
-
 const handleAddLineItemType = async () => {
   if (!newLineItemTypeName.value.trim()) return
-  
-  addingLineItemType.value = true
   try {
-    const newLineItemType = await api.create('line_item_types', {
-      name: newLineItemTypeName.value.trim()
-    })
-    
+    const newLineItemType = await addLineItemType({ name: newLineItemTypeName.value.trim() })
     lineItemTypes.value.push(newLineItemType)
-    
     if (pendingLineItemTypeSelection.value) {
       await saveModelInputField(pendingLineItemTypeSelection.value, 'line_item_type_id', newLineItemType.id)
       pendingLineItemTypeSelection.value = null
     }
-    
     showAddLineItemTypeDialog.value = false
     newLineItemTypeName.value = ''
-    
-    $q.notify({
-      color: 'positive',
-      message: 'Line item type added successfully',
-      icon: 'check'
-    })
+    $q.notify({ color: 'positive', message: 'Line item type added successfully', icon: 'check' })
   } catch (error) {
-    console.error('❌ Error adding line item type:', error)
-    const { message } = handleAPIError(error)
-    $q.notify({
-      color: 'negative',
-      message: `Failed to add line item type: ${message}`,
-      icon: 'report_problem'
-    })
-  } finally {
-    addingLineItemType.value = false
+    $q.notify({ color: 'negative', message: 'Failed to add line item type', icon: 'report_problem', detail: error.message })
   }
 }
-
 const cancelAddLineItemType = () => {
   showAddLineItemTypeDialog.value = false
   newLineItemTypeName.value = ''
   pendingLineItemTypeSelection.value = null
 }
 
-// Methods - Escalation Type Management
+// Escalation Type Management
 const handleEscalationTypeSelect = async (row, selectedValue) => {
   if (selectedValue === 'add-new') {
     pendingEscalationTypeSelection.value = row
@@ -679,70 +469,33 @@ const handleEscalationTypeSelect = async (row, selectedValue) => {
     await saveModelInputField(row, 'escalation_type_id', selectedValue)
   }
 }
-
 const handleAddEscalationType = async () => {
   if (!newEscalationTypeName.value.trim()) return
-  
-  addingEscalationType.value = true
   try {
-    const newEscalationType = await api.create('escalation_types', {
-      name: newEscalationTypeName.value.trim()
-    })
-    
+    const newEscalationType = await addEscalationType({ name: newEscalationTypeName.value.trim() })
     escalationTypes.value.push(newEscalationType)
-    
     if (pendingEscalationTypeSelection.value) {
       await saveModelInputField(pendingEscalationTypeSelection.value, 'escalation_type_id', newEscalationType.id)
       pendingEscalationTypeSelection.value = null
     }
-    
     showAddEscalationTypeDialog.value = false
     newEscalationTypeName.value = ''
-    
-    $q.notify({
-      color: 'positive',
-      message: 'Escalation type added successfully',
-      icon: 'check'
-    })
+    $q.notify({ color: 'positive', message: 'Escalation type added successfully', icon: 'check' })
   } catch (error) {
-    console.error('❌ Error adding escalation type:', error)
-    const { message } = handleAPIError(error)
-    $q.notify({
-      color: 'negative',
-      message: `Failed to add escalation type: ${message}`,
-      icon: 'report_problem'
-    })
-  } finally {
-    addingEscalationType.value = false
+    $q.notify({ color: 'negative', message: 'Failed to add escalation type', icon: 'report_problem', detail: error.message })
   }
 }
-
 const cancelAddEscalationType = () => {
   showAddEscalationTypeDialog.value = false
   newEscalationTypeName.value = ''
   pendingEscalationTypeSelection.value = null
 }
 
-// Methods - Formatting
-const getAmountPrefix = (lineItemTypeId) => {
-  if (lineItemTypeId === 1) return '$' // Currency
-  return ''
-}
-
-const getAmountSuffix = (lineItemTypeId) => {
-  if (lineItemTypeId === 2) return '%' // Percentage
-  return ''
-}
-
-const getEscalationPrefix = (escalationTypeId) => {
-  if (escalationTypeId === 2) return '$' // Currency
-  return ''
-}
-
-const getEscalationSuffix = (escalationTypeId) => {
-  if (escalationTypeId === 1) return '%' // Percentage
-  return ''
-}
+// Formatting helpers (unchanged)
+const getAmountPrefix = (lineItemTypeId) => lineItemTypeId === 1 ? '$' : ''
+const getAmountSuffix = (lineItemTypeId) => lineItemTypeId === 2 ? '%' : ''
+const getEscalationPrefix = (escalationTypeId) => escalationTypeId === 2 ? '$' : ''
+const getEscalationSuffix = (escalationTypeId) => escalationTypeId === 1 ? '%' : ''
 
 // Lifecycle
 onMounted(async () => {
@@ -750,10 +503,8 @@ onMounted(async () => {
     fetchLineItemTypes(),
     fetchEscalationTypes()
   ])
-  
-  // If we have an initial transaction, fetch its scenarios
   if (selectedTransactionId.value) {
-    await fetchScenariosForTransaction(selectedTransactionId.value)
+    await fetchScenarios({ transaction_id: selectedTransactionId.value })
   }
 })
 </script>

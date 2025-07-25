@@ -5,10 +5,7 @@ import { api, handleAPIError } from '../services/api'
 
 export function useGenericCRUD(endpoint, options = {}) {
   const $q = useQuasar()
-  
-  // Derive table name from endpoint (just use the endpoint as the display name)
-  const tableName = endpoint
-  
+    
   // Options with defaults
   const {
     defaultCreateData = {},
@@ -60,31 +57,49 @@ export function useGenericCRUD(endpoint, options = {}) {
   })
 
   // Methods
-  const fetchAll = async (additionalEndpoints = []) => {
+  const fetchAll = async (arg) => {
     loading.value = true
     try {
-      const promises = [api.getAll(endpoint)]
-      
-      // Fetch additional data if specified
+      let mainPromise;
+      let additionalEndpoints = []
+
+      // If arg is an object, treat it as filter/query params
+      if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
+        mainPromise = api.query(endpoint, arg)
+      } else {
+        // Otherwise, treat as additional endpoints array
+        mainPromise = api.getAll(endpoint)
+        if (Array.isArray(arg)) {
+          additionalEndpoints = arg
+        }
+      }
+
+      const promises = [mainPromise]
       additionalEndpoints.forEach(endpoint => {
         promises.push(api.getAll(endpoint))
       })
-      
+
       const results = await Promise.all(promises)
       items.value = results[0]
-      
+
       // Store additional data
       if (results.length > 1) {
         additionalEndpoints.forEach((endpoint, index) => {
           additionalData.value[endpoint] = results[index + 1]
         })
       }
-      
-      console.log(`✅ ${tableName} loaded:`, items.value.length)
+
+      console.log(`✅ ${endpoint} loaded:`, items.value.length)
       return results[0]
     } catch (error) {
       const { error: errorType, message } = handleAPIError(error)
-      console.error(`Failed to fetch ${tableName}:`, message)
+      $q.notify({
+        color: 'negative',
+        message: `Failed to fetch ${endpoint}: ${message}`,
+        errorType: `Error type: ${errorType}`,
+        icon: 'report_problem'
+      })
+      console.error(`Failed to fetch ${endpoint}:`, message)
       items.value = []
       throw error
     } finally {
@@ -99,7 +114,7 @@ export function useGenericCRUD(endpoint, options = {}) {
       
       $q.notify({
         color: 'positive',
-        message: `New ${tableName} added`,
+        message: `New ${endpoint} added`,
         icon: 'check'
       })
       
@@ -108,7 +123,8 @@ export function useGenericCRUD(endpoint, options = {}) {
       const { error: errorType, message } = handleAPIError(error)
       $q.notify({
         color: 'negative',
-        message: `Failed to create ${tableName}: ${message}`,
+        message: `Failed to create ${endpoint}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       throw error
@@ -117,7 +133,7 @@ export function useGenericCRUD(endpoint, options = {}) {
 
   const saveField = async (row, fieldName, value) => {
     try {
-      console.log('Saving field:', tableName, row.id, fieldName, value)
+      console.log('Saving field:', endpoint, row.id, fieldName, value)
       
       let apiValue = value
       if (fieldName.includes('date_') && value) {
@@ -145,6 +161,7 @@ export function useGenericCRUD(endpoint, options = {}) {
       $q.notify({
         color: 'negative',
         message: `Failed to update ${fieldName}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       console.error('Save field error:', error)
@@ -158,7 +175,7 @@ export function useGenericCRUD(endpoint, options = {}) {
     return new Promise((resolve) => {
       $q.dialog({
         title: 'Confirm Delete',
-        message: `Are you sure you want to delete ${tableName} "${displayName}"?`,
+        message: `Are you sure you want to delete ${endpoint} "${displayName}"?`,
         cancel: true,
         persistent: true
       }).onOk(async () => {
@@ -172,7 +189,7 @@ export function useGenericCRUD(endpoint, options = {}) {
           
           $q.notify({
             color: 'positive',
-            message: `${tableName} deleted successfully`,
+            message: `${endpoint} deleted successfully`,
             icon: 'check'
           })
           
@@ -181,7 +198,8 @@ export function useGenericCRUD(endpoint, options = {}) {
           const { error: errorType, message } = handleAPIError(error)
           $q.notify({
             color: 'negative',
-            message: `Failed to delete ${tableName}: ${message}`,
+            message: `Failed to delete ${endpoint}: ${message}`,
+            errorType: `Error type: ${errorType}`,
             icon: 'report_problem'
           })
           resolve(false)
@@ -198,7 +216,7 @@ export function useGenericCRUD(endpoint, options = {}) {
     return new Promise((resolve) => {
       $q.dialog({
         title: 'Confirm Delete',
-        message: `Are you sure you want to delete ${selectedItems.value.length} ${tableName}(s)?`,
+        message: `Are you sure you want to delete ${selectedItems.value.length} ${endpoint}(s)?`,
         cancel: true,
         persistent: true
       }).onOk(async () => {
@@ -218,7 +236,7 @@ export function useGenericCRUD(endpoint, options = {}) {
           
           $q.notify({
             color: 'positive',
-            message: `${tableName}s deleted successfully`,
+            message: `${endpoint}s deleted successfully`,
             icon: 'check'
           })
           
@@ -227,8 +245,9 @@ export function useGenericCRUD(endpoint, options = {}) {
           const { error: errorType, message } = handleAPIError(error)
           $q.notify({
             color: 'negative',
-            message: `Failed to delete ${tableName}s: ${message}`,
-            icon: 'report_problem'
+            message: `Failed to delete ${endpoint}s: ${message}`,
+            errorType: `Error type: ${errorType}`,
+            icon: 'report_problem',
           })
           resolve(false)
         }
@@ -268,7 +287,7 @@ export function useGenericCRUD(endpoint, options = {}) {
     try {
       return await api.getRelated(endpoint, id, relation)
     } catch (error) {
-      console.error(`Failed to fetch ${relation} for ${tableName}:`, error)
+      console.error(`Failed to fetch ${relation} for ${endpoint}:`, error)
       return []
     }
   }
@@ -281,6 +300,7 @@ export function useGenericCRUD(endpoint, options = {}) {
       $q.notify({
         color: 'negative',
         message: `Failed to create ${relation}: ${message}`,
+        errorType: `Error type: ${errorType}`,
         icon: 'report_problem'
       })
       throw error
